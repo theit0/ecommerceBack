@@ -39,19 +39,22 @@ public class MercadoPagoController {
 
     @PostMapping("/webhook")
     public void handleNotification(@RequestBody String payload) {
-        // String JSON
-        String jsonString = "{\"data\":{\"id\":\"75197705434\"}}";
+        try {
+            // String JSON
+            String jsonString = payload;
 
-        // Crear un objeto Gson
-        Gson gson = new Gson();
+            // Crear un objeto Gson
+            Gson gson = new Gson();
 
-        // Parsear el string JSON a un mapa de cadenas
-        Map<String, Map<String, String>> jsonMap = gson.fromJson(jsonString, Map.class);
+            // Parsear el string JSON a un mapa de cadenas
+            Map<String, Map<String, String>> jsonMap = gson.fromJson(jsonString, Map.class);
+            Map<String, String> data = jsonMap.get("data");
+            String id = data.get("id");
+            System.out.println(id);
+        }catch (Exception e) {
+            System.out.println(e);
+        }
 
-        // Acceder a los datos
-        Map<String, String> data = jsonMap.get("data");
-        String id = data.get("id");
-        System.out.println(id);
     }
 
     @PostMapping("/preference")
@@ -92,7 +95,7 @@ public class MercadoPagoController {
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://8fa3-190-15-220-246.ngrok-free.app/api/mp/webhook") //cambiarlo
+                    .notificationUrl("https://78cf-190-15-220-246.ngrok-free.app/api/mp/webhook") //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
