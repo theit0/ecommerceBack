@@ -6,6 +6,9 @@ import static com.mercadopago.MercadoPagoConfig.getStreamHandler;
 import Base.Ecommerce.Entity.DetallePedido;
 import Base.Ecommerce.Entity.Pedido;
 import Base.Ecommerce.Entity.Producto;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.mercadopago.*;
 import com.mercadopago.MercadoPagoConfig.*;
 import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
@@ -14,13 +17,17 @@ import com.mercadopago.client.preference.PreferenceItemRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
+import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 
@@ -29,6 +36,23 @@ public class MercadoPagoController {
 
     @Value("${MP_ACCESS_TOKEN}") // Inyecta el valor de la variable de entorno MP_ACCESS_TOKEN
     private String accessToken;
+
+    @PostMapping("/webhook")
+    public void handleNotification(@RequestBody String payload) {
+        // String JSON
+        String jsonString = "{\"data\":{\"id\":\"75197705434\"}}";
+
+        // Crear un objeto Gson
+        Gson gson = new Gson();
+
+        // Parsear el string JSON a un mapa de cadenas
+        Map<String, Map<String, String>> jsonMap = gson.fromJson(jsonString, Map.class);
+
+        // Acceder a los datos
+        Map<String, String> data = jsonMap.get("data");
+        String id = data.get("id");
+        System.out.println(id);
+    }
 
     @PostMapping("/preference")
     public String getList (@RequestBody Pedido pedido) {
@@ -58,6 +82,7 @@ public class MercadoPagoController {
             }
 
 
+
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest
                     .builder()
                     .success("https://nike.com.ar")
@@ -67,11 +92,10 @@ public class MercadoPagoController {
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
+                    .notificationUrl("https://8fa3-190-15-220-246.ngrok-free.app/api/mp/webhook") //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
-
-
 
             Preference preference = client.create(preferenceRequest);
 

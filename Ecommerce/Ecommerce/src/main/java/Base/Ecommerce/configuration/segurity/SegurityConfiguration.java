@@ -3,6 +3,7 @@ package Base.Ecommerce.configuration.segurity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -48,7 +49,9 @@ public class SegurityConfiguration {
                                 .requestMatchers("/cliente").hasAuthority("Admin")
                                 .requestMatchers("/producto").hasAuthority("Cliente")
                                 .requestMatchers("/admin").hasAuthority("Admin")
-                                .anyRequest().authenticated()
+                                .requestMatchers("/api/mp/preference").hasAuthority("Cliente")
+                                .requestMatchers("/api/mp/webhook").permitAll()
+                                .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2ResourceServer ->
                         oauth2ResourceServer
