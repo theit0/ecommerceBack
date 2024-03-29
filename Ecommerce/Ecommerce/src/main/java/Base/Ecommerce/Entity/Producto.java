@@ -20,6 +20,7 @@ public class Producto extends Base {
     private String title;
     private String descripcion;
     private float price;
+    private String urlImagen;
 
     @Column(name = "fechaBaja")
     private LocalDateTime fechaBaja;

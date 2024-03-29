@@ -47,7 +47,7 @@ public class SegurityConfiguration {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/cliente").hasAuthority("Admin")
-                                .requestMatchers("/producto").hasAuthority("Cliente")
+                                .requestMatchers("/producto").permitAll()
                                 .requestMatchers("/admin").hasAuthority("Admin")
                                 .requestMatchers("/api/mp/preference").hasAuthority("Cliente")
                                 .requestMatchers("/api/mp/webhook").permitAll()
