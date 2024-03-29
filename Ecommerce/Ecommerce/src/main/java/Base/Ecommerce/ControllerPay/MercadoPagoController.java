@@ -3,11 +3,14 @@ package Base.Ecommerce.ControllerPay;
 import static com.mercadopago.MercadoPagoConfig.getStreamHandler;
 
 
+import Base.Ecommerce.Entity.Cliente;
 import Base.Ecommerce.Entity.DetallePedido;
 import Base.Ecommerce.Entity.Pedido;
 import Base.Ecommerce.Entity.Producto;
+import Base.Ecommerce.Repositories.ClienteRepository;
 import Base.Ecommerce.Repositories.PedidoRepository;
 import Base.Ecommerce.Repositories.ProductoRepository;
+import Base.Ecommerce.Services.ClienteService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -51,14 +54,17 @@ public class MercadoPagoController {
     private final PedidoRepository pedidoRepository;
     private final ProductoRepository productoRepository;
 
+    private final ClienteRepository clienteRepository;
+
     public MercadoPagoController(PedidoRepository pedidoRepository,
-                                 ProductoRepository productoRepository) {
+                                 ProductoRepository productoRepository, ClienteRepository clienteRepository) {
         this.pedidoRepository = pedidoRepository;
         this.productoRepository = productoRepository;
+        this.clienteRepository = clienteRepository;
     }
 
     @PostMapping("/webhook")
-    public void handleNotification(@RequestBody String payload) {
+    public void handleNotification(@RequestBody String payload,@RequestParam Long clienteid) {
         try {
             // String JSON
             String jsonString = payload;
@@ -113,9 +119,13 @@ public class MercadoPagoController {
                             throw new Exception();
                         }
                     }
-
+                    //Buscar el Cliente de la sesion
+                    Optional<Cliente> optionalCliente = clienteRepository.findById(clienteid);
+                    Cliente cliente = optionalCliente.get();
+                    System.out.println(cliente.getNombre());
                     // Crear un nuevo pedido
                     Pedido pedido = new Pedido();
+                    pedido.setCliente(cliente);
                     pedido.setFecha(LocalDateTime.now()); // O establece la fecha que desees
                     pedido.setMontoTotal(rootNode.path("transaction_amount").asText()); // O ajusta según tu lógica
 
@@ -135,7 +145,7 @@ public class MercadoPagoController {
     }
 
     @PostMapping("/preference")
-    public String getList (@RequestBody Pedido pedido) {
+    public String getList (@RequestBody Pedido pedido,@RequestParam Long clienteid) {
 
         /*
         if (pedido == null) {
@@ -174,7 +184,7 @@ public class MercadoPagoController {
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://6caa-190-15-220-246.ngrok-free.app/api/mp/webhook") //cambiarlo
+                    .notificationUrl("https://cf6e-190-15-220-246.ngrok-free.app/api/mp/webhook?clienteid=" + clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
