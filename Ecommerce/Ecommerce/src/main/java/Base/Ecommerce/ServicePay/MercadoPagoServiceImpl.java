@@ -53,7 +53,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
     }
     //Metodo q genera la preferencia de pago
     @Override
-    public String getList(@RequestBody Pedido pedido, @RequestParam Long clienteid) throws Exception {
+    public String getList(@RequestBody Pedido pedido, @RequestParam Long Clienteid) throws Exception {
 
         try {
 
@@ -87,7 +87,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://354f-191-82-19-233.ngrok-free.app/api/mp/webhook?Clienteid=" + clienteid) //cambiarlo
+                    .notificationUrl("https://f432-190-15-220-246.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
@@ -102,7 +102,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
 
     }
     @Override
-    public void handleNotification(@RequestBody String payload,@RequestParam Long clienteid) throws Exception{
+    public void handleNotification(@RequestBody String payload,@RequestParam Long Clienteid) throws Exception{
         try {
 
             // String JSON
@@ -131,7 +131,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
                 HttpResponse<String> response = future.get();
                 if (response.statusCode() == 200) {
                     //System.out.println(response.body());
-                    createPedido(response, clienteid);
+                    createPedido(response, Clienteid);
 
                 }
             } catch (InterruptedException | ExecutionException e) {
@@ -142,7 +142,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
         }
 
     }
-    public void createPedido(HttpResponse<String> response, Long clienteid) throws Exception{
+    public void createPedido(HttpResponse<String> response, Long Clienteid) throws Exception{
 
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree(response.body());
@@ -172,7 +172,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             }
         }
         //Buscar el Cliente de la sesion
-        Optional<Cliente> optionalCliente = clienteRepository.findById(clienteid);
+        Optional<Cliente> optionalCliente = clienteRepository.findById(Clienteid);
         Cliente cliente = optionalCliente.get();
         System.out.println(cliente.getNombre());
         // Crear un nuevo pedido

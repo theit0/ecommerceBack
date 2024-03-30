@@ -47,6 +47,7 @@ public class SegurityConfiguration {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/cliente").permitAll()
+                                .requestMatchers("/cliente/save-user").permitAll()
                                 .requestMatchers("/producto").permitAll()
                                 .requestMatchers("/admin").hasAuthority("Admin")
                                 .requestMatchers("/api/mp/preference").permitAll()

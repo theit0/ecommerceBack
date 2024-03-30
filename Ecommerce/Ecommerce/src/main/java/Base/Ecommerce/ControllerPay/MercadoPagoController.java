@@ -25,7 +25,6 @@ public class MercadoPagoController extends BaseControllerImpl<MP, MercadoPagoSer
     @PostMapping("/webhook")
     public ResponseEntity<?> handleNotification(@RequestBody String payload,@RequestParam Long Clienteid) {
        try {
-
            servicio.handleNotification(payload,Clienteid);
            return ResponseEntity.status(HttpStatus.OK).body("PedidoCreado");
        }catch (Exception e){
@@ -34,15 +33,12 @@ public class MercadoPagoController extends BaseControllerImpl<MP, MercadoPagoSer
     }
 
     @PostMapping("/preference")
-    public ResponseEntity<?> getList (@RequestBody Pedido pedido,@RequestParam Long clienteid) {
+    public ResponseEntity<?> getList (@RequestBody Pedido pedido,@RequestParam Long Clienteid) {
         try {
-
-            return ResponseEntity.status(HttpStatus.OK).body(servicio.getList(pedido,clienteid));
+            return ResponseEntity.status(HttpStatus.OK).body(servicio.getList(pedido,Clienteid));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(("{\"error\":\"" +e.getMessage() +"\"}"));
 
         }
-
-
     }
 }

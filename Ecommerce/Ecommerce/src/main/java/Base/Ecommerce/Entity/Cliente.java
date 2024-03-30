@@ -27,5 +27,7 @@ public class Cliente extends Base{
     @Column(name = "fechaModificacion")
     private LocalDateTime fechaModificacion;
 
+    private String auth0id;
 
+    private String email;
 }
