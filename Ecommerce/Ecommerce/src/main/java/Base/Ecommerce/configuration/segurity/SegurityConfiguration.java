@@ -49,7 +49,7 @@ public class SegurityConfiguration {
                                 .requestMatchers("/cliente").permitAll()
                                 .requestMatchers("/producto").permitAll()
                                 .requestMatchers("/admin").hasAuthority("Admin")
-                                .requestMatchers("/api/mp/preference").hasAuthority("Cliente")
+                                .requestMatchers("/api/mp/preference").permitAll()
                                 .requestMatchers("/api/mp/webhook").permitAll()
                                 .anyRequest().permitAll()
                 )

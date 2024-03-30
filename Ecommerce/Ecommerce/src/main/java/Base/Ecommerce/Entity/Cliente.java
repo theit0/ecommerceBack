@@ -27,7 +27,5 @@ public class Cliente extends Base{
     @Column(name = "fechaModificacion")
     private LocalDateTime fechaModificacion;
 
-    @Column(name = "auth0id")
-    private int auth0id;
 
 }
