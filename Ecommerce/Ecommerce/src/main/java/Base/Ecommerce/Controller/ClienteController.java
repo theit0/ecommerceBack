@@ -46,7 +46,18 @@ public class ClienteController extends BaseControllerImpl<Cliente, ClienteServic
         catch (Exception e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(("{\"error\":\"" +e.getMessage() +"\"}"));
         }
+    }
 
 
+    @PostMapping("/findUserByAuth0ID")
+    public ResponseEntity<?> findUserByAuth0ID(@RequestBody UserDTO userDTO) {
+        try {
+            Cliente cliente = clienteRepository.findByAuth0id(userDTO.getUserID());
+            return ResponseEntity.status(HttpStatus.OK).body(cliente);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    "{\"error\":\"Error porfavor intente mas tarde. \"}"
+            );
+        }
     }
 }

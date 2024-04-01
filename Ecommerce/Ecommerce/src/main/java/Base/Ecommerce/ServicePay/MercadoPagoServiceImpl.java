@@ -87,7 +87,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://f432-190-15-220-246.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
+                    .notificationUrl("https://9205-15-220-246.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
