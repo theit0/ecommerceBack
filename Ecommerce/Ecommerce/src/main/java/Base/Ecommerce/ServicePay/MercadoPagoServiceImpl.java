@@ -16,9 +16,14 @@ import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.preference.Preference;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,12 +46,16 @@ import java.util.concurrent.ExecutionException;
 public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements MercadoPagoService {
     @Value("${MP_ACCESS_TOKEN}") // Inyecta el valor de la variable de entorno MP_ACCESS_TOKEN
     private String accessToken;
+    @Value("${DIRECCION_GMAIL}") // Inyecta el valor de la variable de entorno MP_ACCESS_TOKEN
+    private String direccionGmail;
     @Autowired
     ProductoRepository productoRepository;
     @Autowired
     ClienteRepository clienteRepository;
     @Autowired
     PedidoRepository pedidoRepository;
+    @Autowired
+    private JavaMailSender mailSender;
 
     public MercadoPagoServiceImpl(myBaseRepository baseRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository) {
         super(baseRepository);
@@ -87,7 +96,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://9205-15-220-246.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
+                    .notificationUrl("https://5597-190-177-166-150.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
@@ -186,6 +195,28 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
 
         // Aquí puedes guardar el pedido en tu base de datos o realizar otras acciones según tu lógica de negocio
         pedidoRepository.save(pedido);
+        //Metodo que manda el mail de notificacion al cliente
+        sendEmail(pedido,cliente);
 
+    }
+    public void sendEmail (Pedido pedido, Cliente cliente){
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+
+
+        try {
+            Long nroPedido = pedido.getId();
+            System.out.println(nroPedido);
+            String receptor = cliente.getEmail();
+            System.out.println(receptor);
+            mailMessage.setFrom(direccionGmail);
+            mailMessage.setTo(receptor);
+            mailMessage.setSubject("Pedido Ecommerce");
+            mailMessage.setText("Pedido Confirmado, numero de pedido: "+ nroPedido);
+            mailSender.send(mailMessage);
+            System.out.println("el mail fue enviado con exito");
+        }catch (Exception e){
+            e.printStackTrace();
+            System.out.println("Error al enviar el correo electrónico: " + e.getMessage());
+        }
     }
 }
