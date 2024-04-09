@@ -24,8 +24,12 @@ public class Pedido extends Base{
     @Column(name = "fecha")
     private LocalDateTime fecha;
 
+    @Column(name = "demora")
+    private Integer demora;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<DetallePedido> detallesPedido = new ArrayList<DetallePedido>();
+
 
     @NotNull
     @ManyToOne(cascade = CascadeType.REFRESH,fetch = FetchType.EAGER)

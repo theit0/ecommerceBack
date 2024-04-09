@@ -9,6 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 
 public interface MercadoPagoService extends BaseService<MP,Long> {
-    String getList(@RequestBody Pedido pedido, @RequestParam Long Clienteid) throws Exception;
-    void handleNotification(@RequestBody String payload,@RequestParam Long Clienteid) throws Exception;
+    String getList(Pedido pedido, Long Clienteid) throws Exception;
+    void handleNotification(String payload,Long Clienteid) throws Exception;
 }

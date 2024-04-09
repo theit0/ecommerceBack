@@ -18,6 +18,7 @@ import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.preference.Preference;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,11 +34,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalTime;
+import java.time.format.TextStyle;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -55,9 +57,11 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
     @Autowired
     PedidoRepository pedidoRepository;
     @Autowired
+    ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository;
+    @Autowired
     private JavaMailSender mailSender;
 
-    public MercadoPagoServiceImpl(myBaseRepository baseRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository) {
+    public MercadoPagoServiceImpl(myBaseRepository baseRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository, ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository) {
         super(baseRepository);
     }
     //Metodo q genera la preferencia de pago
@@ -96,7 +100,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://5597-190-177-166-150.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
+                    .notificationUrl("https://22c3-191-82-13-64.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
@@ -192,7 +196,33 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
 
         // Asignar los detalles del pedido
         pedido.setDetallesPedido(detallesPedido);
+        //Buscar cual es la demora actual
+        //Obtengo la fecha actual
+        LocalDate fechaActual = LocalDate.now();
+        // Obtener el día de la semana actual como un objeto DayOfWeek
+        DayOfWeek diaSemana = fechaActual.getDayOfWeek();
 
+        // Obtener el nombre completo del día de la semana actual en español
+        String nombreDia = diaSemana.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("es-ES"));
+        //Busco en la BD la clase configuracion retiro que este en vigencia y para el dia actual
+        ConfiguracionTiempoRetiro configActual = configuracionTiempoRetiroRepository.findActual(fechaActual, nombreDia);
+        List<RangoHorario> rangos = configActual.getRangoHorario();
+        //recorro todos los rangos horarios configurados y selecciono el de horario actual y seteo la demora al pedido
+        for (RangoHorario rango : rangos) {
+            LocalTime horaActual = LocalTime.now();
+            LocalTime horaDesde = rango.getHoraDesde();
+            LocalTime horaHasta = rango.getHoraHasta();
+            if(horaActual.isAfter(horaDesde) && horaActual.isBefore(horaHasta)){
+                Integer demora = rango.getTiempoDemora();
+                pedido.setDemora(demora);
+                break;
+            }
+
+
+        }
+        if (pedido.getDemora() == null) {
+            pedido.setDemora(60);
+        }
         // Aquí puedes guardar el pedido en tu base de datos o realizar otras acciones según tu lógica de negocio
         pedidoRepository.save(pedido);
         //Metodo que manda el mail de notificacion al cliente
@@ -204,14 +234,38 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
 
 
         try {
+            //obtengo la informacion del pedido
             Long nroPedido = pedido.getId();
-            System.out.println(nroPedido);
             String receptor = cliente.getEmail();
-            System.out.println(receptor);
+            LocalDateTime fecha = pedido.getFecha();
+            List<DetallePedido> detalles = pedido.getDetallesPedido();
+            String montoTotal = pedido.getMontoTotal();
+
+            //Construir el contenido del correo
+            StringBuilder messageBody = new StringBuilder();
+            messageBody.append("¡Pedido confirmado!\n\n");
+            messageBody.append("Hola ").append(cliente.getNombre()).append(", tu pedido ya fue confirmado y está próximo a prepararse.\n\n");
+            messageBody.append("Fecha: ").append(fecha).append("\n");
+            messageBody.append("Pedido: ").append(nroPedido).append("\n");
+            messageBody.append("Tiempo estimado: 30 minutos\n\n");
+            messageBody.append("Detalles del pedido:\n");
+
+            for (DetallePedido detalle : detalles) {
+                Producto producto = detalle.getProducto();
+                int cantidad = detalle.getQuantity();
+                double subtotal = detalle.getSubtotalPedido();
+
+                // Agregar detalle al cuerpo del correo electrónico
+                messageBody.append("(").append(cantidad).append(") ").append(producto.getTitle()).append("    "+ subtotal +"$").append("\n");
+            }
+            messageBody.append("\nTotal: $").append(montoTotal).append("\n\n");
+            messageBody.append("Para más información puedes llamar al 2617000018 o escribir a zandy burguer\n\n");
+            messageBody.append("¡Gracias por tu compra!");
+            //informacion del email
             mailMessage.setFrom(direccionGmail);
             mailMessage.setTo(receptor);
-            mailMessage.setSubject("Pedido Ecommerce");
-            mailMessage.setText("Pedido Confirmado, numero de pedido: "+ nroPedido);
+            mailMessage.setSubject("¡Pedido Confirmado!");
+            mailMessage.setText(messageBody.toString());
             mailSender.send(mailMessage);
             System.out.println("el mail fue enviado con exito");
         }catch (Exception e){
