@@ -59,9 +59,11 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
     @Autowired
     ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository;
     @Autowired
+    FacturaRepository facturaRepository;
+    @Autowired
     private JavaMailSender mailSender;
 
-    public MercadoPagoServiceImpl(myBaseRepository baseRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository, ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository) {
+    public MercadoPagoServiceImpl(myBaseRepository baseRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository, ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository, FacturaRepository facturaRepository) {
         super(baseRepository);
     }
     //Metodo q genera la preferencia de pago
@@ -100,7 +102,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://22c3-191-82-13-64.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
+                    .notificationUrl("https://93df-191-82-13-64.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
             PreferenceClient client = new PreferenceClient();
@@ -144,7 +146,8 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
                 HttpResponse<String> response = future.get();
                 if (response.statusCode() == 200) {
                     //System.out.println(response.body());
-                    createPedido(response, Clienteid);
+                    Pedido pedido = createPedido(response, Clienteid);
+                    createFacturacion(pedido,payload);
 
                 }
             } catch (InterruptedException | ExecutionException e) {
@@ -155,7 +158,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
         }
 
     }
-    public void createPedido(HttpResponse<String> response, Long Clienteid) throws Exception{
+    public Pedido createPedido(HttpResponse<String> response, Long Clienteid) throws Exception{
 
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree(response.body());
@@ -227,6 +230,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
         pedidoRepository.save(pedido);
         //Metodo que manda el mail de notificacion al cliente
         sendEmail(pedido,cliente);
+        return pedido;
 
     }
     public void sendEmail (Pedido pedido, Cliente cliente){
@@ -240,6 +244,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             LocalDateTime fecha = pedido.getFecha();
             List<DetallePedido> detalles = pedido.getDetallesPedido();
             String montoTotal = pedido.getMontoTotal();
+            Integer tiempoDemora = pedido.getDemora();
 
             //Construir el contenido del correo
             StringBuilder messageBody = new StringBuilder();
@@ -247,7 +252,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             messageBody.append("Hola ").append(cliente.getNombre()).append(", tu pedido ya fue confirmado y está próximo a prepararse.\n\n");
             messageBody.append("Fecha: ").append(fecha).append("\n");
             messageBody.append("Pedido: ").append(nroPedido).append("\n");
-            messageBody.append("Tiempo estimado: 30 minutos\n\n");
+            messageBody.append("Tiempo estimado: ").append(tiempoDemora).append("  Minutos").append("\n\n");
             messageBody.append("Detalles del pedido:\n");
 
             for (DetallePedido detalle : detalles) {
@@ -267,10 +272,41 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             mailMessage.setSubject("¡Pedido Confirmado!");
             mailMessage.setText(messageBody.toString());
             mailSender.send(mailMessage);
-            System.out.println("el mail fue enviado con exito");
         }catch (Exception e){
             e.printStackTrace();
-            System.out.println("Error al enviar el correo electrónico: " + e.getMessage());
         }
+    }
+
+    public void createFacturacion(Pedido pedido, String payload){
+        Factura factura = new Factura();
+        List<DetalleFactura> detalleFacturas = new ArrayList<>();
+        factura.setPedido(pedido);
+        List<DetallePedido> detallePedidos = pedido.getDetallesPedido();
+        for (DetallePedido detallePedido : detallePedidos){
+            DetalleFactura detalleFactura = new DetalleFactura();
+            detalleFactura.setQuantity(detallePedido.getQuantity());
+            detalleFactura.setSubtotalPedido(detallePedido.getSubtotalPedido());
+            detalleFactura.setProducto(detallePedido.getProducto());
+            detalleFacturas.add(detalleFactura);
+        }
+        factura.setDetallesFactura(detalleFacturas);
+        factura.setFormaPago(pedido.getFormaPago());
+        factura.setFechaAlta(LocalDate.now());
+        factura.setFechaFacturacion(LocalDate.now());
+        factura.setTotalVenta(pedido.getMontoTotal());
+        //informacion del pago
+        // String JSON
+        String jsonString = payload;
+
+        // Crear un objeto Gson
+        Gson gson = new Gson();
+
+        // Parsear el string JSON a un mapa de cadenas
+        Map<String, Map<String, String>> jsonMap = gson.fromJson(jsonString, Map.class);
+        Map<String, String> data = jsonMap.get("data");
+        String paymentId = data.get("id");
+        factura.setMp_payment_id(paymentId);
+
+        facturaRepository.save(factura);
     }
 }
