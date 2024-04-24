@@ -3,7 +3,6 @@ package Base.Ecommerce.Controller;
 import Base.Ecommerce.DTO.UserDTO;
 import Base.Ecommerce.Entity.Cliente;
 import Base.Ecommerce.Repositories.ClienteRepository;
-import Base.Ecommerce.Services.ClienteService;
 import Base.Ecommerce.Services.ClienteServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

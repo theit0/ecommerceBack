@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.validation.constraints.NotNull;
+
 @Entity
 @Table(name = "detallepedido")
 @NoArgsConstructor
@@ -17,6 +19,7 @@ public class DetallePedido extends Base{
 
     private int subtotalPedido;
 
+    @NotNull
     @ManyToOne(cascade = CascadeType.REFRESH,fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_producto")
     private Producto producto;

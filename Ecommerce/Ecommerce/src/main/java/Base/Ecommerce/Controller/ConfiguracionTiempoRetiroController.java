@@ -2,7 +2,6 @@ package Base.Ecommerce.Controller;
 
 import Base.Ecommerce.Entity.ConfiguracionTiempoRetiro;
 import Base.Ecommerce.Services.ConfiguracionTiempoRetiroServiceImpl;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

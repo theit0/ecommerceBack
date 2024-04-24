@@ -2,12 +2,10 @@ package Base.Ecommerce.ServicePay;
 
 import Base.Ecommerce.Entity.*;
 import Base.Ecommerce.Repositories.*;
-import Base.Ecommerce.ServicePay.MercadoPagoService;
 import Base.Ecommerce.Services.BaseServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
 import com.mercadopago.client.preference.PreferenceClient;
@@ -16,19 +14,13 @@ import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.preference.Preference;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -60,10 +52,13 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
     ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository;
     @Autowired
     FacturaRepository facturaRepository;
+
+    @Autowired
+    MPRepository mpRepository;
     @Autowired
     private JavaMailSender mailSender;
 
-    public MercadoPagoServiceImpl(myBaseRepository baseRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository, ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository, FacturaRepository facturaRepository) {
+    public MercadoPagoServiceImpl(BaseRepository<MP,Long> baseRepository,MPRepository mpRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository, PedidoRepository pedidoRepository, ConfiguracionTiempoRetiroRepository configuracionTiempoRetiroRepository, FacturaRepository facturaRepository) {
         super(baseRepository);
     }
     //Metodo q genera la preferencia de pago
@@ -76,11 +71,13 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
 
             List<DetallePedido> detalles = pedido.getDetallesPedido();
             List<PreferenceItemRequest> items = new ArrayList<>();
+
             for (DetallePedido detalle : detalles) {
                 Long id = detalle.getProducto().getId();
                 int quantity = detalle.getQuantity();
-                String title = detalle.getProducto().getTitle();
-                float price = detalle.getProducto().getPrice();
+                String title = detalle.getProducto().getTitulo();
+                float price = detalle.getProducto().getPrecio();
+
                 //Preferencia de venta
                 PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
                         .id(id.toString())
@@ -99,19 +96,23 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
                     .pending("https://youtube.com")
                     .failure("https://youtube.com")
                     .build();
+
             PreferenceRequest preferenceRequest = PreferenceRequest
                     .builder()
                     .items(items)
-                    .notificationUrl("https://93df-191-82-13-64.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
+                    .notificationUrl("https://3b99-190-177-183-107.ngrok-free.app/api/mp/webhook?Clienteid=" + Clienteid) //cambiarlo
                     .backUrls(backUrls)
                     .build();
+
             PreferenceClient client = new PreferenceClient();
 
             Preference preference = client.create(preferenceRequest);
 
             return preference.getId();
+
         } catch (MPException | MPApiException e) {
             System.out.println(e.getMessage()); // Or use a logger
+
             return e.toString();
         }
 
@@ -138,22 +139,26 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
                     .header("Authorization", "Bearer " + accessToken)
                     .GET()
                     .build();
+
             try {
                 //http client sirve para enviar la solicitud HTTP
                 HttpClient httpClient = HttpClient.newHttpClient();
                 // Se envía la solicitud HTTP de forma asíncrona utilizando el método sendAsync() de HttpClient. Esto devuelve un CompletableFuture que representa una operación asincrónica que eventualmente producirá una respuesta HTTP.
                 CompletableFuture<HttpResponse<String>> future = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
                 HttpResponse<String> response = future.get();
+
                 if (response.statusCode() == 200) {
                     //System.out.println(response.body());
                     Pedido pedido = createPedido(response, Clienteid);
                     createFacturacion(pedido,payload);
 
                 }
+
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
-        }catch (Exception e) {
+
+        } catch (Exception e) {
             System.out.println(e);
         }
 
@@ -167,14 +172,16 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
         JsonNode itemsNode = rootNode.path("additional_info").path("items");
         List<DetallePedido> detallesPedido = new ArrayList<>();
         for (JsonNode itemNode : itemsNode) {
+
             String id = itemNode.path("id").asText();
             String title = itemNode.path("title").asText();
             int quantity = itemNode.path("quantity").asInt();
             BigDecimal unitPrice = new BigDecimal(itemNode.path("unit_price").asText());
-
-
             Optional<Producto> optionalProducto = productoRepository.findById(Long.parseLong(id));
+
+
             if (optionalProducto.isPresent()) {
+
                 Producto producto = optionalProducto.get();
                 DetallePedido detalle = new DetallePedido();
                 detalle.setQuantity(quantity);
@@ -182,6 +189,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
                 detalle.setSubtotalPedido(unitPrice.multiply(BigDecimal.valueOf(quantity)).intValue());
                 detalle.setProducto(producto);
                 detallesPedido.add(detalle);
+
             } else {
                 throw new Exception();
 
@@ -190,7 +198,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
         //Buscar el Cliente de la sesion
         Optional<Cliente> optionalCliente = clienteRepository.findById(Clienteid);
         Cliente cliente = optionalCliente.get();
-        System.out.println(cliente.getNombre());
+
         // Crear un nuevo pedido
         Pedido pedido = new Pedido();
         pedido.setCliente(cliente);
@@ -199,22 +207,28 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
 
         // Asignar los detalles del pedido
         pedido.setDetallesPedido(detallesPedido);
+
         //Buscar cual es la demora actual
         //Obtengo la fecha actual
         LocalDate fechaActual = LocalDate.now();
+
         // Obtener el día de la semana actual como un objeto DayOfWeek
         DayOfWeek diaSemana = fechaActual.getDayOfWeek();
 
         // Obtener el nombre completo del día de la semana actual en español
         String nombreDia = diaSemana.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("es-ES"));
+
         //Busco en la BD la clase configuracion retiro que este en vigencia y para el dia actual
         ConfiguracionTiempoRetiro configActual = configuracionTiempoRetiroRepository.findActual(fechaActual, nombreDia);
         List<RangoHorario> rangos = configActual.getRangoHorario();
+
         //recorro todos los rangos horarios configurados y selecciono el de horario actual y seteo la demora al pedido
         for (RangoHorario rango : rangos) {
+
             LocalTime horaActual = LocalTime.now();
             LocalTime horaDesde = rango.getHoraDesde();
             LocalTime horaHasta = rango.getHoraHasta();
+
             if(horaActual.isAfter(horaDesde) && horaActual.isBefore(horaHasta)){
                 Integer demora = rango.getTiempoDemora();
                 pedido.setDemora(demora);
@@ -256,12 +270,13 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             messageBody.append("Detalles del pedido:\n");
 
             for (DetallePedido detalle : detalles) {
+
                 Producto producto = detalle.getProducto();
                 int cantidad = detalle.getQuantity();
                 double subtotal = detalle.getSubtotalPedido();
 
                 // Agregar detalle al cuerpo del correo electrónico
-                messageBody.append("(").append(cantidad).append(") ").append(producto.getTitle()).append("    "+ subtotal +"$").append("\n");
+                messageBody.append("(").append(cantidad).append(") ").append(producto.getTitulo()).append("    "+ subtotal +"$").append("\n");
             }
             messageBody.append("\nTotal: $").append(montoTotal).append("\n\n");
             messageBody.append("Para más información puedes llamar al 2617000018 o escribir a zandy burguer\n\n");
@@ -272,28 +287,35 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             mailMessage.setSubject("¡Pedido Confirmado!");
             mailMessage.setText(messageBody.toString());
             mailSender.send(mailMessage);
+
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
     public void createFacturacion(Pedido pedido, String payload){
+
         Factura factura = new Factura();
         List<DetalleFactura> detalleFacturas = new ArrayList<>();
         factura.setPedido(pedido);
         List<DetallePedido> detallePedidos = pedido.getDetallesPedido();
+
+
         for (DetallePedido detallePedido : detallePedidos){
+
             DetalleFactura detalleFactura = new DetalleFactura();
             detalleFactura.setQuantity(detallePedido.getQuantity());
             detalleFactura.setSubtotalPedido(detallePedido.getSubtotalPedido());
             detalleFactura.setProducto(detallePedido.getProducto());
             detalleFacturas.add(detalleFactura);
         }
-        factura.setDetallesFactura(detalleFacturas);
-        factura.setFormaPago(pedido.getFormaPago());
-        factura.setFechaAlta(LocalDate.now());
-        factura.setFechaFacturacion(LocalDate.now());
-        factura.setTotalVenta(pedido.getMontoTotal());
+
+            factura.setDetallesFactura(detalleFacturas);
+            factura.setFormaPago(pedido.getFormaPago());
+            factura.setFechaAlta(LocalDate.now());
+            factura.setFechaFacturacion(LocalDate.now());
+            factura.setTotalVenta(pedido.getMontoTotal());
+
         //informacion del pago
         // String JSON
         String jsonString = payload;
