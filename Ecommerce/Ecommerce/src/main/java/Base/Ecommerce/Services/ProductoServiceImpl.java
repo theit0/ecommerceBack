@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ProductoServiceImpl extends BaseServiceImpl<Producto,Long> implements ProductoService{
+
     @Autowired
     ProductoRepository productoRepository;
 

@@ -8,28 +8,23 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
-import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "cliente")
+@Table(name = "categoria")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Cliente extends Base{
+public class Categoria extends Base {
     private String nombre;
     @Column(name = "fechaAlta")
     private LocalDateTime fechaAlta;
 
     @Column(name = "fechaBaja")
     private LocalDateTime fechaBaja;
-
     @Column(name = "fechaModificacion")
     private LocalDateTime fechaModificacion;
-
-    @NotNull
-    private String auth0id;
-
-    private String email;
+    private String imagen;
 }

@@ -1,4 +1,6 @@
 package Base.Ecommerce.Services;
 
-public interface ProductoService {
+import Base.Ecommerce.Entity.Producto;
+
+public interface ProductoService extends BaseService<Producto,Long>{
 }
