@@ -16,9 +16,9 @@ import java.time.LocalDateTime;
 @Setter
 public class Producto extends Base {
 
-    private String titulo;
+    private String title;
     private String descripcion;
-    private float precio;
+    private float price;
     private String urlImagen;
     @Column(name = "fechaAlta")
     private LocalDateTime fechaAlta;

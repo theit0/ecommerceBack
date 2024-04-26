@@ -23,4 +23,5 @@ public class PedidoController extends BaseControllerImpl<Pedido, PedidoServiceIm
 
         }
     }
+
 }

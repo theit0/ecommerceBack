@@ -75,8 +75,8 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
             for (DetallePedido detalle : detalles) {
                 Long id = detalle.getProducto().getId();
                 int quantity = detalle.getQuantity();
-                String title = detalle.getProducto().getTitulo();
-                float price = detalle.getProducto().getPrecio();
+                String title = detalle.getProducto().getTitle();
+                float price = detalle.getProducto().getPrice();
 
                 //Preferencia de venta
                 PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
@@ -276,7 +276,7 @@ public class MercadoPagoServiceImpl extends BaseServiceImpl<MP,Long>implements M
                 double subtotal = detalle.getSubtotalPedido();
 
                 // Agregar detalle al cuerpo del correo electrónico
-                messageBody.append("(").append(cantidad).append(") ").append(producto.getTitulo()).append("    "+ subtotal +"$").append("\n");
+                messageBody.append("(").append(cantidad).append(") ").append(producto.getTitle()).append("    "+ subtotal +"$").append("\n");
             }
             messageBody.append("\nTotal: $").append(montoTotal).append("\n\n");
             messageBody.append("Para más información puedes llamar al 2617000018 o escribir a zandy burguer\n\n");
