@@ -24,4 +24,5 @@ public class ConfiguracionTiempoRetiroController extends BaseControllerImpl<Conf
             );
         }
     }
+    //Actualizar configTiemporetiro
 }
